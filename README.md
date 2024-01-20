@@ -1,14 +1,12 @@
 # django-data-fetcher
 
-The manual cousin to graphql dataloaders
-
 ## Installation
 
 ```bash
 pip install data-fetcher
 ```
 
-After installing, you'll need to add our dependency, `django-middleware-global-request`, to your middleware:
+After installing, you'll need to add our sub-dependency (which is automaticaly installed), `django-middleware-global-request`, to your middleware:
 
 
 ```python
