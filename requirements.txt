@@ -1,0 +1,22 @@
+colored-traceback==0.3.0 # used for tests, but required my manage.py and therefore prod scripts
+Django==4.0.0
+django-extensions==3.1.1
+Faker==4.0.0
+ipython==8.10.0
+
+# actual deps
+django-middleware-global-request==0.3.1
+
+# dev
+coverage==5.1
+django-debug-toolbar==3.7
+django-graphiql-debug-toolbar==0.2.0
+black==22.3.0
+pytest==7.1.2
+pytest-django==4.5.2
+factory-boy===2.12.0
+isort===5.7.0
+
+
+# deployment
+twine==4.0.1

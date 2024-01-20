@@ -1,0 +1,27 @@
+[tool.black]
+line-length = 79
+target-version = ['py310']
+include = '\.pyi?$'
+exclude = '''
+
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.mypy_cache
+    | venv
+  )/
+  # ignore auto-generated migrations, no one ever saves those manually
+  | migrations/.*.py 
+  | migrations/.*_initial.py 
+  | migrations/.*_auto_.*.py 
+)
+'''
+
+
+[tool.isort]
+profile = "black"
+line_length = 79
+known_django = "django"
+sections=[ "FUTURE", "STDLIB", "DJANGO", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER" ]
+skip_glob=['*/migrations/*.py']
