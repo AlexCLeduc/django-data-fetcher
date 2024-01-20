@@ -50,7 +50,6 @@ from data_fetcher import InjectibleDataFetcher
 
 class ArticlePermissionFetcher(InjectibleDataFetcher):
     def batch_load_dict(self, article_ids):
-        # keys is a list of article ids
         permissions = ArticlePermission.objects.filter(article_id__in=article_ids)
         return {p.article_id: p for p in permissions}
 
