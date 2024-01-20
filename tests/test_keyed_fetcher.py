@@ -1,6 +1,6 @@
 import datetime
 
-from data_fetcher import GlobalRequest, get_request_bound_fetcher
+from data_fetcher import GlobalRequest
 from data_fetcher.extras import (
     AbstractKeyedDataFetcher,
     KeyedDataFetcherFactory,
@@ -30,8 +30,8 @@ def test_keyed_datafetcher_factory():
     assert cls1 is cls3
 
     with GlobalRequest():
-        loader_for_cls1 = get_request_bound_fetcher(cls1)
-        loader_for_cls2 = get_request_bound_fetcher(cls2)
-        loader_for_cls3 = get_request_bound_fetcher(cls3)
+        loader_for_cls1 = cls1.get_instance()
+        loader_for_cls2 = cls2.get_instance()
+        loader_for_cls3 = cls3.get_instance()
         assert loader_for_cls1 is not loader_for_cls2
         assert loader_for_cls1 is loader_for_cls3

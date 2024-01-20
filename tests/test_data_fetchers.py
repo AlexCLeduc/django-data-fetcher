@@ -9,7 +9,6 @@ from data_fetcher import (
     InjectableDataFetcher,
     PrimaryKeyFetcherFactory,
     get_datafetcher_request_cache,
-    get_request_bound_fetcher,
     request_cached_value,
 )
 
@@ -37,7 +36,7 @@ def test_user_datafetcher(django_assert_num_queries):
     )
 
     with GlobalRequest():
-        loader = get_request_bound_fetcher(UserByPKFetcher)
+        loader = UserByPKFetcher.get_instance()
         with django_assert_num_queries(1):
             # querying users also prefetches groups, so 2 queries are expected
             assert loader.get_many(user_ids) == users
@@ -46,12 +45,12 @@ def test_user_datafetcher(django_assert_num_queries):
                 user.id: user for user in users
             }
 
-        loader2 = get_request_bound_fetcher(UserByPKFetcher)
+        loader2 = UserByPKFetcher.get_instance()
         assert loader is loader2
 
     with GlobalRequest():
         # now check a new loader is brand new w/out any cache
-        loader3 = get_request_bound_fetcher(UserByPKFetcher)
+        loader3 = UserByPKFetcher.get_instance()
         assert loader != loader3
         assert loader3._cache == {}
 
@@ -73,13 +72,12 @@ def test_composed_datafetcher(django_assert_max_num_queries):
     class TrivialOtherFetcher(InjectableDataFetcher):
         def batch_load_dict(self, keys):
             spy(keys)
-            return UserByPKFetcher(
-                self.datafetcher_instance_cache
-            ).get_many_as_dict(keys)
+            user_fetcher = UserByPKFetcher.get_instance()
+            return user_fetcher.get_many_as_dict(keys)
 
     with GlobalRequest():
-        loader = get_request_bound_fetcher(TrivialOtherFetcher)
-        with django_assert_max_num_queries(4):
+        loader = TrivialOtherFetcher.get_instance()
+        with django_assert_max_num_queries(1):
             # querying users also prefetches groups, so 2 queries are expected
             assert loader.get_many(user_ids) == users
             assert loader.get(user_ids[0]) == users[0]

@@ -7,8 +7,4 @@ from .shorthand_fetcher_classes import (
     PrimaryKeyFetcherFactory,
 )
 from .singleton_helpers import request_cached_value
-from .util import (
-    get_datafetcher_request_cache,
-    get_request_bound_fetcher,
-    get_request_bound_user_fetcher_with_fallback,
-)
+from .util import get_datafetcher_request_cache

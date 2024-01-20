@@ -1,5 +1,5 @@
 from .core import InjectableDataFetcher
-from .util import MissingRequestContextException, get_request_bound_fetcher
+from .util import MissingRequestContextException
 
 """
 The most common use case for KeyedDataFetcher is providing a user_id to a datafetcher

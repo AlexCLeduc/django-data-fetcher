@@ -1,5 +1,6 @@
 from collections import defaultdict
 
+from .util import MissingRequestContextException, get_datafetcher_request_cache
 
 
 class BaseDataFetcher:
@@ -51,21 +52,34 @@ class BaseDataFetcher:
 class InjectableDataFetcher(BaseDataFetcher):
     """
     Factory for creating composable datafetchers
-    must pass a dict-like instance cache to the constructor
     """
 
+    # this variable can be used for composition
     datafetcher_instance_cache = None
 
-    def __new__(cls, datafetcher_instance_cache):
-        if cls not in datafetcher_instance_cache:
-            datafetcher_instance_cache[cls] = super().__new__(cls)
-        fetcher = datafetcher_instance_cache[cls]
-        assert isinstance(fetcher, cls)
-        return fetcher
+    __create_key = object()
 
-    def __init__(self, datafetcher_instance_cache):
-        if self.datafetcher_instance_cache != datafetcher_instance_cache:
-            self.datafetcher_instance_cache = datafetcher_instance_cache
-            super().__init__()
+    def __init__(self, create_key):
+        # Hacky way to make constructor "private"
+        assert (
+            create_key == InjectableDataFetcher.__create_key
+        ), "Never create data-fetcher instances directly, use get_instance"
 
+        super().__init__()
 
+    @classmethod
+    def get_instance(cls, raise_on_no_context=False):
+        try:
+            fetcher_instance_cache = get_datafetcher_request_cache()
+        except MissingRequestContextException as e:
+            if raise_on_no_context:
+                raise e
+            else:
+                fetcher_instance_cache = {}
+
+        if cls not in fetcher_instance_cache:
+            fetcher_instance_cache[cls] = cls(
+                InjectableDataFetcher.__create_key
+            )
+
+        return fetcher_instance_cache[cls]

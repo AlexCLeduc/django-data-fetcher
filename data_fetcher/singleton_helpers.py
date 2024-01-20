@@ -1,7 +1,7 @@
 from functools import wraps
 
 from .core import InjectableDataFetcher
-from .util import MissingRequestContextException, get_request_bound_fetcher
+from .util import MissingRequestContextException
 
 
 class SingletonDataFetcher(InjectableDataFetcher):
@@ -41,7 +41,10 @@ def request_cached_value(fn):
     @wraps(fn)
     def wrapper():
         try:
-            return get_request_bound_fetcher(FetcherForFunction).get_value()
+            instance = FetcherForFunction.get_instance(
+                raise_on_no_context=True
+            )
+            return instance.get_value()
         except MissingRequestContextException:
             print(
                 f"WARNING: calling {fn.__name__} outside of a request context,"
