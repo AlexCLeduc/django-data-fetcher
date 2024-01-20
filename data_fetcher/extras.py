@@ -1,16 +1,41 @@
+from functools import cache, wraps
+
 from .core import InjectableDataFetcher
-from .util import MissingRequestContextException
+from .util import MissingRequestContextException, get_datafetcher_request_cache
 
-"""
-The most common use case for KeyedDataFetcher is providing a user_id to a datafetcher
 
-so that you don't have to provide it as a resource key every time you use the datafetcher
+def cache_within_request(fn):
+    """
+    ensure a function's values are cached for the duration of a request
 
-"""
+    """
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            datafetcher_cache = get_datafetcher_request_cache()
+        except MissingRequestContextException:
+            print(
+                f"WARNING: calling {fn.__name__} outside of a request context,"
+                " caching is disabled"
+            )
+            return fn(*args, **kwargs)
+
+        # use function itself as key
+        if fn not in datafetcher_cache:
+            datafetcher_cache[fn] = cache(fn)
+
+        return datafetcher_cache[fn](*args, **kwargs)
+
+    return wrapper
 
 
 class AbstractKeyedDataFetcher(InjectableDataFetcher):
     """
+    The most common use case for KeyedDataFetcher is providing a user_id to a datafetcher
+
+    so that you don't have to provide it as a resource key every time you use the datafetcher
+
     To be used as a parent class for keyed-datafetchers
 
     Only used as a type-safety mechanism

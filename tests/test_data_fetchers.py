@@ -8,8 +8,8 @@ from django_middleware_global_request import GlobalRequest, get_request
 from data_fetcher import (
     InjectableDataFetcher,
     PrimaryKeyFetcherFactory,
+    cache_within_request,
     get_datafetcher_request_cache,
-    request_cached_value,
 )
 
 
@@ -98,7 +98,7 @@ def test_cache_decorator(django_assert_max_num_queries):
         spy()
         return 1
 
-    cached_func = request_cached_value(func_to_cache)
+    cached_func = cache_within_request(func_to_cache)
 
     with GlobalRequest():
         result = cached_func()
