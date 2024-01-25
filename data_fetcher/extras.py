@@ -30,27 +30,7 @@ def cache_within_request(fn):
     return wrapper
 
 
-class AbstractKeyedDataFetcher(InjectableDataFetcher):
-    """
-    The most common use case for KeyedDataFetcher is providing a user_id to a datafetcher
-
-    so that you don't have to provide it as a resource key every time you use the datafetcher
-
-    To be used as a parent class for keyed-datafetchers
-
-    Only used as a type-safety mechanism
-    """
-
-    def __init__(self, *args, **kwargs):
-        if not getattr(self, "provided_value", None):
-            raise MissingRequestContextException(
-                "AbstractThreatLocationAsOfTimeByThreatIdFetcher "
-                "must be instantiated  KeyedDataFetcherFactory"
-            )
-        super().__init__(*args, **kwargs)
-
-
-class KeyedDataFetcherFactory:
+class ValueBoundFetcherFactory:
     datafetcher_classes_by_key = {}
 
     @staticmethod
@@ -62,17 +42,11 @@ class KeyedDataFetcherFactory:
         if value is None:
             value = key
 
-        if not issubclass(parent_cls, AbstractKeyedDataFetcher):
-            raise TypeError(
-                "KeyedDataFetcherFactory can only create classes that inherit "
-                " from AbstractKeyedDataFetcher"
-            )
-
         return type(
-            f"DataFetcher_{key}",
+            f"{parent_cls.__name__}__{key}",
             (parent_cls,),
             dict(
-                provided_value=value,
+                bound_value=value,
             ),
         )
 
@@ -97,3 +71,31 @@ class KeyedDataFetcherFactory:
             )
             cls.datafetcher_classes_by_key[dict_key] = fetcher
             return fetcher
+
+
+class ValueBoundDataFetcher(InjectableDataFetcher):
+    """
+    To be used as a parent class for keyed-datafetchers
+
+    The most common use case for ValueBoundDataFetcher
+    is providing a user_id to a data-fetcher
+
+    """
+
+    def __init__(self, *args, **kwargs):
+        if not getattr(self, "bound_value", None):
+            raise MissingRequestContextException(
+                "AbstractThreatLocationAsOfTimeByThreatIdFetcher "
+                "must be instantiated  KeyedDataFetcherFactory"
+            )
+        super().__init__(*args, **kwargs)
+
+    @classmethod
+    def get_value_bound_class(cls, key, value=None):
+        """
+        if value not hashable, provide key first, then value
+        otherwise just provide the value as 'key'
+        """
+        return ValueBoundFetcherFactory.get_fetcher_by_key(
+            cls, key, value=None
+        )

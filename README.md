@@ -128,7 +128,7 @@ def test_article_permission_fetcher(django_assert_num_queries):
 ```
 
 
-## Paradigm shift
+## How to provide non-key data to fetchers
 
 Data-fetcher's main feature is not performance, but enabling decoupling. The view no longer has to be responsible for fetching data for downstream consumers (e.g. templates).
 
@@ -142,26 +142,25 @@ It's tempting to subclass DataFetcher and add a user argument to the constructor
 
 The 3rd solution fulfills the OOP temptation of adding a user argument to the constructor, but it's a "higher-order" solution. Rather than attaching the user to the fetcher-class, we would dynamically create a class that has a reference to the user, and then use a factory to ensure we recycle the same class for the same user. 
 
-There's a builtin shortcut for this pattern, too, called `KeyedDataFetcher`. KeyedDataFetcher classes have a `value` attribute available inside their batch-load methods. 
+There's a builtin shortcut for this pattern, too, called `ValueBoundDataFetcher`. ValueBoundDataFetcher classes have a `bound_value` attribute available inside their batch-load methods. 
 
 
 ```python
 # my_app/fetchers.py
-from data_fetcher import KeyedDataFetcher
+from data_fetcher import ValueBoundDataFetcher
 
-class UserBoundArticlePermissionFetcher(KeyedDataFetcher):
+class UserBoundArticlePermissionFetcher(ValueBoundDataFetcher):
     def batch_load_dict(self, article_ids):
-        user_id = self.value
+        user_id = self.bound_value
         permissions = ArticlePermission.objects.filter(user_id=user_id, article_id__in=article_ids)
         return { p.article_id: p for p in permissions }
 
 # my_app/views.py
 from my_app.fetchers import UserBoundArticlePermissionFetcher
-from data_fetcher import KeyedDataFetcherFactory
 
 def article_list(request):
     # generate a class that has a reference to the user
-    UserBoundArticlePermissionFetcher = KeyedDataFetcherFactory.get_fetcher_by_key(
+    UserBoundArticlePermissionFetcher = ValueBoundDataFetcher.get_value_bound_class(
         UserBoundArticlePermissionFetcher, 
         request.user.id
     )
