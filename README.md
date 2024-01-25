@@ -3,7 +3,7 @@
 ## Installation
 
 ```bash
-pip install data-fetcher
+pip install django-data-fetcher
 ```
 
 After installing, you'll need to add our sub-dependency (which is automaticaly installed), `django-middleware-global-request`, to your middleware:
