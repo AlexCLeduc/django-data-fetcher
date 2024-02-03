@@ -8,7 +8,7 @@ class AbstractModelByIdFetcher(InjectableDataFetcher):
 
     @classmethod
     def batch_load_dict(cls, ids):
-        records = list(cls.model.objects.filter(id__in=ids))
+        records = list(cls.model.objects.filter(pk__in=ids))
         return {record.id: record for record in records}
 
 
