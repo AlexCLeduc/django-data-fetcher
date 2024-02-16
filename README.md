@@ -106,6 +106,8 @@ from data_fetcher import PrimaryKeyFetcherFactory
 ArticleByIdFetcher = PrimaryKeyFetcherFactory(Article)
 ArticleByIdFetcher2 = PrimaryKeyFetcherFactory(Article)
 assert ArticleByIdFetcher == ArticleByIdFetcher2
+
+article_1 = ArticleByIdFetcher.get_instance().get(1)
 ```
 
 
