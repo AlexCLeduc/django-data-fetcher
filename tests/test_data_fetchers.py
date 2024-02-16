@@ -112,3 +112,12 @@ def test_cache_decorator(django_assert_max_num_queries):
         cached_func()
 
         assert spy.call_count == 2
+
+
+def test_priming():
+    user_fetcher = PrimaryKeyFetcherFactory.get_model_by_id_fetcher(
+        get_user_model()
+    ).get_instance()
+
+    user_fetcher.prime(1, "test value")
+    assert user_fetcher.get(1) == "test value"

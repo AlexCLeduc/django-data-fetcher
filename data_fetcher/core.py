@@ -48,6 +48,9 @@ class BaseDataFetcher:
             self._cache[key] = value
         return values
 
+    def prime(self, key, value):
+        self._cache[key] = value
+
 
 class InjectableDataFetcher(BaseDataFetcher):
     """
