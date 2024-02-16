@@ -11,6 +11,12 @@ class AbstractModelByIdFetcher(InjectableDataFetcher):
         records = list(cls.model.objects.filter(pk__in=ids))
         return {record.id: record for record in records}
 
+    def get_all(self, queryset=None):
+        if queryset is None:
+            queryset = self.model.objects.all()
+        for r in queryset:
+            self.prime(r.pk, r)
+
 
 class PrimaryKeyFetcherFactory:
     """

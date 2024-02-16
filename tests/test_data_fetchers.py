@@ -115,9 +115,29 @@ def test_cache_decorator(django_assert_max_num_queries):
 
 
 def test_priming():
+    with GlobalRequest():
+        user_fetcher = PrimaryKeyFetcherFactory.get_model_by_id_fetcher(
+            get_user_model()
+        ).get_instance()
+
+        user_fetcher.prime(1, "test value")
+        assert user_fetcher.get(1) == "test value"
+
+
+def test_pk_fetcher_fetch_all(django_assert_max_num_queries):
+    users = [
+        get_user_model().objects.create(username=f"test_user_{i}")
+        for i in range(10)
+    ]
+    u1 = users[0]
+    user_ids = [user.id for user in users]
+
     user_fetcher = PrimaryKeyFetcherFactory.get_model_by_id_fetcher(
         get_user_model()
     ).get_instance()
 
-    user_fetcher.prime(1, "test value")
-    assert user_fetcher.get(1) == "test value"
+    with GlobalRequest():
+        with django_assert_max_num_queries(1):
+            user_fetcher.get_all()
+            u = user_fetcher.get(user_ids[0])
+            assert u == u1
