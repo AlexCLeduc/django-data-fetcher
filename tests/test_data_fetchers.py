@@ -138,6 +138,7 @@ def test_pk_fetcher_fetch_all(django_assert_max_num_queries):
 
     with GlobalRequest():
         with django_assert_max_num_queries(1):
-            user_fetcher.get_all()
+            records = user_fetcher.get_all()
+            assert set(records) == set(users)
             u = user_fetcher.get(user_ids[0])
             assert u == u1
