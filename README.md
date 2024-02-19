@@ -39,7 +39,7 @@ def get_most_recent_order(user_id):
 
 Now you can call `get_most_recent_order` as many times as you want within a request, e.g. in template helpers and in views, and it will only hit the database once (assuming you use the same user_id). This is a wrapper around `functools.cache`, so it will also cache across calls to the same function with the same arguments.
 
-In addition to caching, if you'd also like to _batch_ a function, it gets a little more complicated. You need to subclass our `InjectibleDataFetcher` class and implement a `batch_load` (or `batch_load_dict`) method with the batching logic. Then you can use its factory method to get an instance of your fetcher class, and call its `get()`, `get_many()`, or `prefetch_keys()` methods. 
+In addition to caching, this library also supports _batching_ fetching logic, but it is a bit more complicated. You need to subclass our `InjectibleDataFetcher` class and implement a `batch_load` (or `batch_load_dict`) method with the batching logic. Then you can use its factory method to get an instance of your fetcher class, and call its `get()`, `get_many()`, or `prefetch_keys()` methods. 
 
 For example, it's usually pretty difficult to efficiently fetch permissions for a list of objects without coupling your view and your template. With data-fetcher, we can offload the work to a data-fetcher and have a re-usable template-helper that checks permissions. When we notice performance problems, we simply add a `prefetch_keys` call to our view to pre-populate the cache. 
 
@@ -84,7 +84,7 @@ Fetchers also cache values that were called with `get` or `get_many`. If you req
 
 ## Shortcuts 
 
-It's extremely common to want to fetch a single object by id or by a parent's foreign key. We provide a few shortcuts for this:
+It's extremely common to want to fetch a single object by id, or by a parent's foreign key. We provide a few shortcuts for this:
 
 ```python
 from data_fetcher import AbstractModelByIdFetcher, AbstractChildModelByAttrFetcher
@@ -103,8 +103,8 @@ In fact, the ID fetcher was so common we have a factory for it. This factory ret
 ```python
 from data_fetcher import PrimaryKeyFetcherFactory
 
-ArticleByIdFetcher = PrimaryKeyFetcherFactory(Article)
-ArticleByIdFetcher2 = PrimaryKeyFetcherFactory(Article)
+ArticleByIdFetcher = PrimaryKeyFetcherFactory.get_model_by_id_fetcher(Article)
+ArticleByIdFetcher2 = PrimaryKeyFetcherFactory.get_model_by_id_fetcher(Article)
 assert ArticleByIdFetcher == ArticleByIdFetcher2
 
 article_1 = ArticleByIdFetcher.get_instance().get(1)
