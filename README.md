@@ -89,11 +89,20 @@ Fetchers also cache values that were called with `get` or `get_many`. If you req
 
 #### Fetcher API
 
+
+Public method:
+
 - `get(key)` : fetch a single resource by key
 - `get_many(keys)` : fetch multiple resources by key, returns a list
 - `get_many_as_dict(keys)` : like get_many, but returns a dict indexed by your requested keys
-- `prefetch_keys(keys) : void` : pre-populate the cache with a list of keys. This is useful when you know you're going to need a lot of objects, and you want to avoid N+1 queries.
-- `prime(key,value) : void` manually set a value in the cache. This isn't recommended, but it can be useful for performance
+- `prefetch_keys(keys)` : Like get-many but returns nothing. Pre-populates the cache with a list of keys. This is useful when you know you're going to need a lot of objects, and you want to avoid N+1 queries.
+- `prime(key,value)` manually set a value in the cache. This isn't recommended, but it can be useful for performance in certain cases
+
+Subclass-API:
+
+You can implement `batch_load(keys)` OR `batch_load_dict(keys)`. 
+- `batch_load(keys)` needs to return a list of resources in the same order (and length) as the keys. If a resource is missing, you need an explicit None in the returned list.
+- `batch_load_dict(keys)` should return a dict of resources, indexed by the keys. If a value is missing, `None` will be returned when that key is requested (it tolerates missing keys).
 
 
 ## Shortcuts 
@@ -222,7 +231,7 @@ def get_home_feed_data(user_id):
 
 Now any function can request the entire structure and use its rich API. We can isolate the ugly fetching logic and don't need to pass data around (e.g. view -> template -> helpers) to remain efficient.
 
-This is not a perfect approach, as it couples our consumers (e.g. views, helpers) to this data-structure. This makes it difficult to re-use those helpers, or parts of the data-structure. However, in a pinch, it may be preferable to setting up fetchers (e.g. article-by-id, comments-by-article-id) for every atomic piece of data. A neat compromise might be to split this up into multiple cache functions. Note that cached functions can call each other!
+This is not a perfect approach, as it couples our consumers (e.g. views, helpers) to this data-structure. This makes it difficult to re-use those helpers, or parts of the data-structure. However, in a pinch, it may be preferable to setting up fetchers (e.g. article-by-id, comments-by-article-id) for every atomic piece of data. A neat compromise might be to split this up into multiple cache functions, or a class that that executes other cached functions lazily. 
 
 
 ## Async caveat
