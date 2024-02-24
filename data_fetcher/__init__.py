@@ -1,4 +1,4 @@
-from django_middleware_global_request import GlobalRequest
+from data_fetcher.middleware import GlobalRequest
 
 from .core import InjectableDataFetcher
 from .extras import ValueBoundDataFetcher, cache_within_request

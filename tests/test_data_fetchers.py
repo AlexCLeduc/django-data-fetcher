@@ -3,14 +3,13 @@ from unittest.mock import MagicMock
 
 from django.contrib.auth import get_user_model
 
-from django_middleware_global_request import GlobalRequest, get_request
-
 from data_fetcher import (
     InjectableDataFetcher,
     PrimaryKeyFetcherFactory,
     cache_within_request,
     get_datafetcher_request_cache,
 )
+from data_fetcher.middleware import GlobalRequest, get_request
 
 
 def test_global_request_outside_request():
