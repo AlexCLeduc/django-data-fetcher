@@ -142,3 +142,29 @@ def test_pk_fetcher_fetch_all(django_assert_max_num_queries):
             assert set(records) == set(users)
             u = user_fetcher.get(user_ids[0])
             assert u == u1
+
+
+def test_batch_load_dict_none_value():
+    """
+    the batch_load_dict is more tolerant than the list counterpart,
+    it doesn't need explicit None
+
+    Also check that ommitted keys still get cached
+    """
+
+    spy = MagicMock()
+
+    class TestFetcher(InjectableDataFetcher):
+        def batch_load_dict(self, keys):
+            spy()
+            return {"a": 1, "b": None}
+
+    with GlobalRequest():
+        fetcher = TestFetcher.get_instance()
+
+        fetcher.prefetch_keys(["a", "b", "c"])
+        assert fetcher.get("a") == 1
+        assert fetcher.get("b") is None
+        assert fetcher.get("c") is None
+
+        assert spy.call_count == 1
