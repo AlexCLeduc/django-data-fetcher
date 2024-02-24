@@ -23,9 +23,11 @@ MIDDLEWARE = [
 
 ## Usage
 
-Data-fetcher enables caching and batching against a request, allowing you to decouple code that fetches data from code that uses it without any performance impact.
+Data-fetcher enables request-scoped caching and batching, allowing you to decouple fetching logic from consumption logic without any performance impact.
 
-Caching is done by default, but batching is more complex. 
+
+
+### Caching
 
 If you'd just like to cache a function so you don't repeat it in different places, you can just use the `cache_within_request` decorator:
 
@@ -39,9 +41,11 @@ def get_most_recent_order(user_id):
 
 Now you can call `get_most_recent_order` as many times as you want within a request, e.g. in template helpers and in views, and it will only hit the database once (assuming you use the same user_id). This is a wrapper around `functools.cache`, so it will also cache across calls to the same function with the same arguments.
 
-In addition to caching, this library also supports _batching_ fetching logic, but it is a bit more complicated. You need to subclass our `InjectibleDataFetcher` class and implement a `batch_load` (or `batch_load_dict`) method with the batching logic. Then you can use its factory method to get an instance of your fetcher class, and call its `get()`, `get_many()`, or `prefetch_keys()` methods. 
+### Batching
 
-For example, it's usually pretty difficult to efficiently fetch permissions for a list of objects without coupling your view and your template. With data-fetcher, we can offload the work to a data-fetcher and have a re-usable template-helper that checks permissions. When we notice performance problems, we simply add a `prefetch_keys` call to our view to pre-populate the cache. 
+This library also supports _batching_ fetching logic. You need to subclass our `InjectibleDataFetcher` class and implement a `batch_load` (or `batch_load_dict`) method with the batching logic. Then you can use its factory method to get an instance of your fetcher class, and call its `get()`, `get_many()`, or `prefetch_keys()` methods. 
+
+For example, it's usually pretty difficult to efficiently fetch permissions for a list of objects without coupling your view to your templates/helpers. With this library, we can offload the work to a data-fetcher instance and have a re-usable template-helper that checks permissions. When we notice performance problems, we simply add a `prefetch_keys` call to our view to pre-populate the cache. 
 
 ```python
 # my_app/fetchers.py
@@ -80,11 +84,21 @@ def article_list(request):
 
 Behind the scenes, fetchers' `get_instance` will use the global-middleware request to always return the same instance of the fetcher for the same request. This allows the fetcher to call your batch function once, when the view calls `prefetch_keys`, and then use the cached results for all subsequent calls to `get` or `get_many`. 
 
-Fetchers also cache values that were called with `get` or `get_many`. If you request a key that isn't cached, it will call your batch method again for that single key. It's recommended to monitor your queries while developing via your server-console or a tool like django-debug-toolbar. 
+Fetchers also cache values that were called with `get` or `get_many`. If you request a key that isn't cached, it will call your batch method again for that single key. It's recommended to monitor your queries while developing with a tool like [django-debug-toolbar](https://github.com/jazzband/django-debug-toolbar/). 
+
+
+#### Fetcher API
+
+- `get(key)` : fetch a single resource by key
+- `get_many(keys)` : fetch multiple resources by key, returns a list
+- `get_many_as_dict(keys)` : like get_many, but returns a dict indexed by your requested keys
+- `prefetch_keys(keys) : void` : pre-populate the cache with a list of keys. This is useful when you know you're going to need a lot of objects, and you want to avoid N+1 queries.
+- `prime(key,value) : void` manually set a value in the cache. This isn't recommended, but it can be useful for performance
+
 
 ## Shortcuts 
 
-It's extremely common to want to fetch a single object by id, or by a parent's foreign key. We provide a few shortcuts for this:
+It's extremely common to want to fetch a single object by id, or by a parent's foreign key. We provide a few baseclasses for this:
 
 ```python
 from data_fetcher import AbstractModelByIdFetcher, AbstractChildModelByAttrFetcher
@@ -113,7 +127,7 @@ article_1 = ArticleByIdFetcher.get_instance().get(1)
 
 ## Testing data-fetchers
 
-Batch logic is often complex and error-prone. We recommend writing tests for your fetchers. django-middleware-global-request provides a mock request object that you can use to test your fetchers. Here's an example in pytest:
+Batch logic is often complex and error-prone. We recommend writing tests for your fetchers. django-middleware-global-request provides a mock request object that you can use to test your fetchers. Without this context-manager, your fetchers won't be able to cache anything and might raise errors. Here's an example in pytest:
 
 ```python
 from django_middleware_global_request import GlobalRequest
@@ -132,15 +146,15 @@ def test_article_permission_fetcher(django_assert_num_queries):
 
 ## How to provide non-key data to fetchers
 
-Data-fetcher's main feature is not performance, but enabling decoupling. The view no longer has to be responsible for fetching data for downstream consumers (e.g. templates).
+Data-fetcher's main feature is not performance, but enabling decoupling. The view layer no longer has to be responsible for passing data to downstream consumers (e.g. utils, template-helpers, service-objects, etc.).
 
-This paradigm shift can be a challenging adjustment. For instance, our ArticlePermissionFetcher above was naïve. Permission records should be fetched with respect to a user. How can we provide the user's ID to the fetcher? 
+This paradigm shift can be a challenging adjustment. For instance, our `ArticlePermissionFetcher` above was naïve. Permission records should be fetched with respect to a user. How can we provide the user's ID to the fetcher? 
 
-It's tempting to subclass DataFetcher and add a user argument to the constructor. Unfortunately, this isn't supported by our factory pattern. There are broadly 3 different ways to solve this problem:
+It's tempting to subclass DataFetcher and add a user argument to its `get_instance()` method. Unfortunately, extending the factory pattern is rather complex. There are broadly 3 different ways to solve this problem:
 
 1. Use the global request to get the user. This is the simplest solution, but it limits your data-fetcher to the current user. You couldn't, for example, build a view that shows a list of articles available to _other_ users. 
 2. Create composite-keys: instead of loading permissions by article id, you load them by `(user_id, article_id)` pairs. This is a good solution, but is often complex to implement and you usually don't need this flexibility. 
-3. Dynamically create a _class_ that has a reference to the user
+3. Dynamically create a data-fetcher _class_ that has a reference to the user
 
 The 3rd solution fulfills the OOP temptation of adding a user argument to the constructor, but it's a "higher-order" solution. Rather than attaching the user to the fetcher-class, we would dynamically create a class that has a reference to the user, and then use a factory to ensure we recycle the same class for the same user. 
 
@@ -173,5 +187,44 @@ def article_list(request):
 
 ```
 
-With this solution, we're still able to create fetchers for multiple users. However it won't be as efficient as the composite-key solution (e.g. one query per user vs. one query for all users).
+With this solution, we're still able to create fetchers for multiple users. However, it won't be as efficient as the composite-key solution (e.g. one query per user vs. one query for all users). 
 
+Note that `bound_value` can be anything, so you can use this pattern to provide more than a single piece of data to your fetcher, just make sure it's hashable so it can be used as a key (otherwise, you'll want to pass separate value and key kwargs to `get_value_bound_class`. 
+
+
+## Recipe: Caching a single data-structure with tons of data
+
+Batching logic often has a high-cognitive load, it may not be worth it to batch _all the things_. Fortunately, the `@cache_within_request` decorator can cache anything, there's no need to restrict ourselves to a single resource. For instance, let's say we have a complex home-feed page that needs to fetch a lot of data for a particular user. We can use the `cache_within_request` decorator to cache the entire data-structure. 
+
+
+```python
+@cache_within_request
+def get_home_feed_data(user_id):
+    user = User.objects.filter(id=user_id).prefetch_related(
+        Prefetch('articles', queryset=Article.objects.filter(deleted=False), to_attr='article_list'),
+        Prefetch('articles__comments', queryset=Comment.objects.filter(deleted=False), to_attr='comment_list'),
+        Prefetch('articles__author', queryset=User.objects.all(), to_attr='author_list'),
+        # ...
+    )
+    more_data = get_more_data(user)
+    # assemble a rich data structure with convenient API
+    return {
+        'user': user,
+        'articles': user.article_list,
+        'comments': flatten([article.comment_list for article in user.article_list]),
+        'articles_by_id': # ...
+        'comments_by_article_id': # ...
+        'comments_by_id': # ...
+        # ...
+    }
+
+```
+
+Now any function can request the entire structure and use its rich API. We can isolate the ugly fetching logic and don't need to pass data around (e.g. view -> template -> helpers) to remain efficient.
+
+This is not a perfect approach, as it couples our consumers (e.g. views, helpers) to this data-structure. This makes it difficult to re-use those helpers, or parts of the data-structure. However, in a pinch, it may be preferable to setting up fetchers (e.g. article-by-id, comments-by-article-id) for every atomic piece of data. A neat compromise might be to split this up into multiple cache functions. Note that cached functions can call each other!
+
+
+## Async caveat
+
+None of this has been tested with async views. django-global-middleware-request uses thread-locals, so it's [unlikely to work with async views](https://forum.djangoproject.com/t/django-and-multi-tenancy-issue/18730/8). Eventually the middleware will probably be replaced with an async-compatible solution.
