@@ -1,6 +1,16 @@
+from django.contrib.auth.models import User
+
 import factory
 
 from .models import Author, Book, Tag
+
+
+class UserFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = User
+
+    username = factory.Faker("user_name")
+    email = factory.Faker("email")
 
 
 class TagFactory(factory.django.DjangoModelFactory):

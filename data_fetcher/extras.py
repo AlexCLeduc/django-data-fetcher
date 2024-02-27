@@ -1,6 +1,6 @@
 from functools import cache, wraps
 
-from .core import InjectableDataFetcher
+from .core import DataFetcher
 from .util import MissingRequestContextException, get_datafetcher_request_cache
 
 
@@ -73,7 +73,7 @@ class ValueBoundFetcherFactory:
             return fetcher
 
 
-class ValueBoundDataFetcher(InjectableDataFetcher):
+class ValueBoundDataFetcher(DataFetcher):
     """
     To be used as a parent class for keyed-datafetchers
 

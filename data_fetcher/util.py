@@ -1,4 +1,5 @@
-from django_middleware_global_request import get_request
+# from data_fetcher.middleware import get_request
+from .global_request_context import GlobalRequest, get_request
 
 
 class MissingRequestContextException(Exception):

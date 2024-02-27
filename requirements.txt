@@ -4,9 +4,6 @@ django-extensions==3.1.1
 Faker==4.0.0
 ipython==8.10.0
 
-# actual deps
-django-middleware-global-request==0.3.1
-
 # dev
 coverage==5.1
 django-debug-toolbar==3.7

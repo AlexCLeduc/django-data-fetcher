@@ -3,14 +3,13 @@ from unittest.mock import MagicMock
 
 from django.contrib.auth import get_user_model
 
-from django_middleware_global_request import GlobalRequest, get_request
-
 from data_fetcher import (
-    InjectableDataFetcher,
+    DataFetcher,
     PrimaryKeyFetcherFactory,
     cache_within_request,
     get_datafetcher_request_cache,
 )
+from data_fetcher.util import GlobalRequest, get_request
 
 
 def test_global_request_outside_request():
@@ -22,6 +21,17 @@ def test_global_request_context_processor():
         assert get_request() is not None
         get_request().x = 1
         assert get_request().x == 1
+
+
+def test_global_request_returns_same_request():
+    with GlobalRequest():
+        r1 = get_request()
+        r2 = get_request()
+        assert r1 is r2
+    with GlobalRequest():
+        r3 = get_request()
+
+    assert r1 is not r3
 
 
 def test_user_datafetcher(django_assert_num_queries):
@@ -69,7 +79,7 @@ def test_composed_datafetcher(django_assert_max_num_queries):
     spy = MagicMock()
 
     # Trivial example of dataloader composition
-    class TrivialOtherFetcher(InjectableDataFetcher):
+    class TrivialOtherFetcher(DataFetcher):
         def batch_load_dict(self, keys):
             spy(keys)
             user_fetcher = UserByPKFetcher.get_instance()
@@ -154,7 +164,7 @@ def test_batch_load_dict_none_value():
 
     spy = MagicMock()
 
-    class TestFetcher(InjectableDataFetcher):
+    class TestFetcher(DataFetcher):
         def batch_load_dict(self, keys):
             spy()
             return {"a": 1, "b": None}

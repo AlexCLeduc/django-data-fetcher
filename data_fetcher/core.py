@@ -52,7 +52,7 @@ class BaseDataFetcher:
         self._cache[key] = value
 
 
-class InjectableDataFetcher(BaseDataFetcher):
+class DataFetcher(BaseDataFetcher):
     """
     Factory for creating composable datafetchers
     """
@@ -65,7 +65,7 @@ class InjectableDataFetcher(BaseDataFetcher):
     def __init__(self, create_key):
         # Hacky way to make constructor "private"
         assert (
-            create_key == InjectableDataFetcher.__create_key
+            create_key == DataFetcher.__create_key
         ), "Never create data-fetcher instances directly, use get_instance"
 
         super().__init__()
@@ -81,8 +81,6 @@ class InjectableDataFetcher(BaseDataFetcher):
                 fetcher_instance_cache = {}
 
         if cls not in fetcher_instance_cache:
-            fetcher_instance_cache[cls] = cls(
-                InjectableDataFetcher.__create_key
-            )
+            fetcher_instance_cache[cls] = cls(DataFetcher.__create_key)
 
         return fetcher_instance_cache[cls]
