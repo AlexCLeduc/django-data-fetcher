@@ -1,5 +1,19 @@
 # django-data-fetcher
 
+## What is this? 
+
+This library contains 3 utilities:
+
+1. a function to access the currently-executing django request from anywhere
+    - This can help with a wide variety of fringe use-cases, e.g. wanting to access the current request from a decoupled log helper function
+2. A caching abstraction to cache a function's return value on the request
+    - This is the most frequently useful thing in this package
+3. A _data-fetcher_ abstraction to ease batching
+    - In addition to caching, this helps with _batching_, i.e. N+1 queries 
+    - This is the least important, most complicated and most specific use case. For historical reasons, the entire library is named after this part. Naming things is hard :( 
+
+
+
 ## Installation
 
 ```bash
@@ -21,7 +35,18 @@ MIDDLEWARE = [
 
 ## Usage
 
-Data-fetcher enables request-scoped caching and batching, allowing you to decouple fetching logic from consumption logic without any performance impact.
+
+### Accessing the global request object
+
+Thanks to the middleware, accessing the global request is simple:
+
+```python
+from data_fetcher.util import get_request
+
+def some_random_util_function():
+    request = get_request()
+    do_something_with_request(request)
+```
 
 
 ### Caching
@@ -149,6 +174,8 @@ def test_article_permission_fetcher(django_assert_num_queries):
 
 ```
 
+Note that this context-manager also allows you to use the cache decorator and data-fetchers inside other scenarios, such as celery tasks.
+
 
 ## How to provide non-key data to fetchers
 
@@ -234,3 +261,21 @@ This is not a perfect approach, as it couples our consumers (e.g. views, helpers
 ## Async 
 
 Like most ORM-consuming code, data-fetcher is synchronous. You'll need to use `sync_to_async` to use it inside async views. Behind the scenes, the global-request middleware uses context-vars, which are both thread-safe and async-safe. 
+
+## Cache invalidation 
+
+You can probably ignore cache invalidation, since the cache is cleared at the end of each request. However, if you change data that has been cached and want updated data during the same request, you can use the `clear_request_cache` function. This will clear all data-fetchers and `@cache_within_request` caches.
+
+```python
+from data_fetcher.util import clear_request_caches
+
+def update_article(request, article_id):
+    article = ArticleFetcher.get_instance().get(article_id)
+    article.title = 'new title'
+    article.save()
+
+    # in case render_page uses the article-fetcher, 
+    # we clear all data-fetchers
+    clear_request_caches()
+    return render_page(article_id)
+```
