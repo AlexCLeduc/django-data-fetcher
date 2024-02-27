@@ -40,16 +40,16 @@ Now you can call `get_most_recent_order` as many times as you want within a requ
 
 ### Batching
 
-This library also supports _batching_ fetching logic. You need to subclass our `InjectibleDataFetcher` class and implement a `batch_load` (or `batch_load_dict`) method with the batching logic. Then you can use its factory method to get an instance of your fetcher class, and call its `get()`, `get_many()`, or `prefetch_keys()` methods. 
+This library also supports _batching_ fetching logic. You need to subclass our `DataFetcher` class and implement a `batch_load` (or `batch_load_dict`) method with the batching logic. Then you can use its factory method to get an instance of your fetcher class, and call its `get()`, `get_many()`, or `prefetch_keys()` methods. 
 
 For example, it's usually pretty difficult to efficiently fetch permissions for a list of objects without coupling your view to your templates/helpers. With this library, we can offload the work to a data-fetcher instance and have a re-usable template-helper that checks permissions. When we notice performance problems, we simply add a `prefetch_keys` call to our view to pre-populate the cache. 
 
 ```python
 # my_app/fetchers.py
 
-from data_fetcher import InjectibleDataFetcher
+from data_fetcher import DataFetcher
 
-class ArticlePermissionFetcher(InjectibleDataFetcher):
+class ArticlePermissionFetcher(DataFetcher):
     def batch_load_dict(self, article_ids):
         permissions = ArticlePermission.objects.filter(article_id__in=article_ids)
         return {p.article_id: p for p in permissions}

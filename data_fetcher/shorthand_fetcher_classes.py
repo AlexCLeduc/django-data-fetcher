@@ -1,9 +1,9 @@
 from collections import defaultdict
 
-from .core import InjectableDataFetcher
+from .core import DataFetcher
 
 
-class AbstractModelByIdFetcher(InjectableDataFetcher):
+class AbstractModelByIdFetcher(DataFetcher):
     model = None  # override this part
 
     @classmethod
@@ -46,7 +46,7 @@ class PrimaryKeyFetcherFactory:
             return fetcher
 
 
-class AbstractChildModelByAttrFetcher(InjectableDataFetcher):
+class AbstractChildModelByAttrFetcher(DataFetcher):
     """
     Loads many records by a single attr, use this to create child-by-parent-id loaders
     """

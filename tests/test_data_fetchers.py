@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 from django.contrib.auth import get_user_model
 
 from data_fetcher import (
-    InjectableDataFetcher,
+    DataFetcher,
     PrimaryKeyFetcherFactory,
     cache_within_request,
     get_datafetcher_request_cache,
@@ -79,7 +79,7 @@ def test_composed_datafetcher(django_assert_max_num_queries):
     spy = MagicMock()
 
     # Trivial example of dataloader composition
-    class TrivialOtherFetcher(InjectableDataFetcher):
+    class TrivialOtherFetcher(DataFetcher):
         def batch_load_dict(self, keys):
             spy(keys)
             user_fetcher = UserByPKFetcher.get_instance()
@@ -164,7 +164,7 @@ def test_batch_load_dict_none_value():
 
     spy = MagicMock()
 
-    class TestFetcher(InjectableDataFetcher):
+    class TestFetcher(DataFetcher):
         def batch_load_dict(self, keys):
             spy()
             return {"a": 1, "b": None}
