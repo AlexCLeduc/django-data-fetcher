@@ -19,13 +19,23 @@ def get_datafetcher_request_cache():
     return request.datafetcher_cache
 
 
-def clear_datafetchers():
+def clear_request_caches():
     """
     Clears all cached values for datafetchers
 
     Only necessary when a request wants data it has modified
+
+    Also clears the functions cached with cache_within_request decorator
     """
     request = get_request()
     if request and hasattr(request, "datafetcher_cache"):
         # reset the cache to an empty dict
         request.datafetcher_cache = {}
+
+
+def clear_datafetchers():
+    """
+    clears request cache
+    old API, prefer clear_request_caches()
+    """
+    clear_request_caches()
