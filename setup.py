@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="django-data-fetcher",
-    version="1.1.1",
+    version="2.0.0",
     author="AlexCLeduc",
     # author_email="author@example.com",
     # description="A small example package",
@@ -18,7 +18,7 @@ setuptools.setup(
         for package in setuptools.find_packages()
         if package.startswith("data_fetcher")
     ],
-    install_requires=["django-middleware-global-request>=0.3"],
+    install_requires=[],
     tests_require=["django"],
     classifiers=[
         "Programming Language :: Python :: 3",
