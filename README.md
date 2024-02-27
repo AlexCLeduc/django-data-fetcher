@@ -6,7 +6,7 @@
 pip install django-data-fetcher
 ```
 
-After installing, you'll need to add our sub-dependency (which is automaticaly installed), `django-middleware-global-request`, to your middleware:
+After installing, you'll need to add our middleware:
 
 
 ```python
@@ -14,17 +14,14 @@ After installing, you'll need to add our sub-dependency (which is automaticaly i
 # ...
 MIDDLEWARE = [
     # ...
-    'django_middleware_global_request',
+    "data_fetcher.middleware.GlobalRequestMiddleware",
     # ...
 ]
-
-
 ```
 
 ## Usage
 
 Data-fetcher enables request-scoped caching and batching, allowing you to decouple fetching logic from consumption logic without any performance impact.
-
 
 
 ### Caching
@@ -82,7 +79,7 @@ def article_list(request):
 
 ```  
 
-Behind the scenes, fetchers' `get_instance` will use the global-middleware request to always return the same instance of the fetcher for the same request. This allows the fetcher to call your batch function once, when the view calls `prefetch_keys`, and then use the cached results for all subsequent calls to `get` or `get_many`. 
+Behind the scenes, fetchers' `get_instance` will use the global-request middleware's request object to always return the same instance of the fetcher for the same request. This allows the fetcher to call your batch function once, when the view calls `prefetch_keys`, and then use the cached results for all subsequent calls to `get` or `get_many`. 
 
 Fetchers also cache values that were called with `get` or `get_many`. If you request a key that isn't cached, it will call your batch method again for that single key. It's recommended to monitor your queries while developing with a tool like [django-debug-toolbar](https://github.com/jazzband/django-debug-toolbar/). 
 
@@ -136,10 +133,10 @@ article_1 = ArticleByIdFetcher.get_instance().get(1)
 
 ## Testing data-fetchers
 
-Batch logic is often complex and error-prone. We recommend writing tests for your fetchers. django-middleware-global-request provides a mock request object that you can use to test your fetchers. Without this context-manager, your fetchers won't be able to cache anything and might raise errors. Here's an example in pytest:
+Batch logic is often complex and error-prone. We recommend writing tests for your fetchers.  provides a mock request object that you can use to test your fetchers. Without this context-manager, your fetchers won't be able to cache anything and might raise errors. Here's an example in pytest:
 
 ```python
-from django_middleware_global_request import GlobalRequest
+from data_fetcher.util import GlobalRequest
 
 def test_article_permission_fetcher(django_assert_num_queries):
     with GlobalRequest():
@@ -201,9 +198,9 @@ With this solution, we're still able to create fetchers for multiple users. Howe
 Note that `bound_value` can be anything, so you can use this pattern to provide more than a single piece of data to your fetcher, just make sure it's hashable so it can be used as a key (otherwise, you'll want to pass separate value and key kwargs to `get_value_bound_class`. 
 
 
-## Recipe: Caching a single data-structure with tons of data
+## Recipe: Caching a single data-structure with complex data
 
-Batching logic often has a high-cognitive load, it may not be worth it to batch _all the things_. Fortunately, the `@cache_within_request` decorator can cache anything, there's no need to restrict ourselves to a single resource. For instance, let's say we have a complex home-feed page that needs to fetch a lot of data for a particular user. We can use the `cache_within_request` decorator to cache the entire data-structure. 
+Batching logic often has a high-cognitive load, it may not be worth it to batch everything. Fortunately, the `@cache_within_request` decorator can cache anything, there's no need to restrict ourselves to a single resource. For instance, let's say we have a complex home-feed page that needs to fetch a lot of data for a particular user. We can use the `cache_within_request` decorator to cache the entire data-structure. 
 
 
 ```python
@@ -234,6 +231,6 @@ Now any function can request the entire structure and use its rich API. We can i
 This is not a perfect approach, as it couples our consumers (e.g. views, helpers) to this data-structure. This makes it difficult to re-use those helpers, or parts of the data-structure. However, in a pinch, it may be preferable to setting up fetchers (e.g. article-by-id, comments-by-article-id) for every atomic piece of data. A neat compromise might be to split this up into multiple cache functions, or a class that that executes other cached functions lazily. 
 
 
-## Async caveat
+## Async 
 
-None of this has been tested with async views. django-global-middleware-request uses thread-locals, so it's [unlikely to work with async views](https://forum.djangoproject.com/t/django-and-multi-tenancy-issue/18730/8). Eventually the middleware will probably be replaced with an async-compatible solution.
+Like most ORM-consuming code, data-fetcher is synchronous. You'll need to use `sync_to_async` to use it inside async views. Behind the scenes, the global-request middleware uses context-vars, which are both thread-safe and async-safe. 

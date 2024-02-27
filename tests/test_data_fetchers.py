@@ -9,7 +9,7 @@ from data_fetcher import (
     cache_within_request,
     get_datafetcher_request_cache,
 )
-from data_fetcher.middleware import GlobalRequest, get_request
+from data_fetcher.util import GlobalRequest, get_request
 
 
 def test_global_request_outside_request():
@@ -21,6 +21,17 @@ def test_global_request_context_processor():
         assert get_request() is not None
         get_request().x = 1
         assert get_request().x == 1
+
+
+def test_global_request_returns_same_request():
+    with GlobalRequest():
+        r1 = get_request()
+        r2 = get_request()
+        assert r1 is r2
+    with GlobalRequest():
+        r3 = get_request()
+
+    assert r1 is not r3
 
 
 def test_user_datafetcher(django_assert_num_queries):

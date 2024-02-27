@@ -1,5 +1,5 @@
 # from data_fetcher.middleware import get_request
-from .middleware import get_request
+from .global_request_context import GlobalRequest, get_request
 
 
 class MissingRequestContextException(Exception):
