@@ -11,7 +11,7 @@ setuptools.setup(
     # description="A small example package",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/AlexCleduc/data-fetcher",
+    url="https://github.com/AlexCLeduc/django-data-fetcher",
     packages=[
         # find_packages() also includes extraneous stuff, like testing and sample_app
         package
