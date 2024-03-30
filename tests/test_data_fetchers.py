@@ -178,3 +178,81 @@ def test_batch_load_dict_none_value():
         assert fetcher.get("c") is None
 
         assert spy.call_count == 1
+
+
+def test_queued_fetch():
+    spy = MagicMock()
+
+    class TestFetcher(DataFetcher):
+        def batch_load_dict(self, keys):
+            spy(keys)
+            return {key: key * 2 for key in keys}
+
+    with GlobalRequest():
+        fetcher = TestFetcher.get_instance()
+        fetcher.prime(1, 2)
+
+        fetcher.enqueue_keys([1, 2, 3, 4])
+
+        assert fetcher.get(1) == 2
+        assert fetcher.get(2) == 4
+        assert fetcher.get(3) == 6
+        assert fetcher.get_many([2, 4, 5]) == [4, 8, 10]
+
+        # primed/cached keys should not be called, even if enqueued
+        assert spy.call_args_list == [
+            (([2, 3, 4],),),
+            (([5],),),
+        ]
+
+        # now check a regular .get() will also fetch queued keys
+        fetcher.enqueue_keys([10, 11])
+        assert fetcher.get(12) == 24
+        assert fetcher.get(10) == 20
+        assert spy.call_args_list == [
+            (([2, 3, 4],),),
+            (([5],),),
+            (([10, 11, 12],),),
+        ]
+
+        # and clears cache
+        fetcher.fetch_queued()
+        assert spy.call_count == 3
+
+
+def test_fetch_lazy():
+    spy = MagicMock()
+
+    class TestFetcher(DataFetcher):
+        def batch_load_dict(self, keys):
+            spy(keys)
+            return {key: key * 2 for key in keys}
+
+    with GlobalRequest():
+        fetcher = TestFetcher.get_instance()
+
+        # check lazy calls are flushed all at once
+        l1 = fetcher.get_lazy(1)
+        l2 = fetcher.get_lazy(2)
+        l3 = fetcher.get_lazy(3)
+        assert spy.call_count == 0
+
+        assert l3.get() == 6
+        assert spy.call_count == 1
+        spy.assert_called_once_with([1, 2, 3])
+
+        # and that queue is cleared
+        fetcher.fetch_queued()
+        assert spy.call_count == 1
+        spy.assert_called_once_with([1, 2, 3])
+
+        # and similarly for get_many_lazy
+        l4_5 = fetcher.get_many_lazy([4, 5])
+        spy.assert_called_once_with([1, 2, 3])
+        l4_5.get()
+
+        assert spy.call_count == 2
+        assert spy.call_args_list == [
+            (([1, 2, 3],),),
+            (([4, 5],),),
+        ]

@@ -6,14 +6,19 @@ from .util import MissingRequestContextException, get_datafetcher_request_cache
 class BaseDataFetcher:
     def __init__(self):
         self._cache = {}
+        self._queue = set()
 
     def get(self, key):
-        if key not in self._cache:
-            return self._get_single_uncached_value(key)
+        all_keys = {key, *self._queue}
+
+        self.prefetch_keys(all_keys)
+
         return self._cache[key]
 
     def get_many(self, keys):
-        uncached_keys = [key for key in keys if key not in self._cache]
+        all_keys = {*keys, *self._queue}
+
+        uncached_keys = [key for key in all_keys if key not in self._cache]
         if uncached_keys:
             self._get_many_uncached_values(uncached_keys)
 
@@ -50,6 +55,29 @@ class BaseDataFetcher:
 
     def prime(self, key, value):
         self._cache[key] = value
+
+    def enqueue_keys(self, keys):
+        self._queue.update(set(keys))
+
+    def fetch_queued(self):
+        queued_keys = set(self._queue)
+        self.get_many(queued_keys)
+
+    def get_lazy(self, key):
+        self.enqueue_keys([key])
+        return LazyFetchedValue(lambda: self.get(key))
+
+    def get_many_lazy(self, keys):
+        self.enqueue_keys(keys)
+        return LazyFetchedValue(lambda: self.get_many(keys))
+
+
+class LazyFetchedValue:
+    def __init__(self, get_val):
+        self.get_val = get_val
+
+    def get(self):
+        return self.get_val()
 
 
 class DataFetcher(BaseDataFetcher):

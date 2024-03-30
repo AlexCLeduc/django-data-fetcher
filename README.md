@@ -119,6 +119,8 @@ Public method:
 - `get_many_as_dict(keys)` : like get_many, but returns a dict indexed by your requested keys
 - `prefetch_keys(keys)` : Like get-many but returns nothing. Pre-populates the cache with a list of keys. This is useful when you know you're going to need a lot of objects, and you want to avoid N+1 queries.
 - `prime(key,value)` manually set a value in the cache. This isn't recommended, but it can be useful for performance in certain cases
+- `enqueue_keys(keys)` : Keys get added to queue, which gets fetched the next time get, get_many or prefetch_keys is called. It is often more convenient to use this than to collect all required keys and call prefetch_keys. 
+- `get_lazy/get_lazy_many`: (*experimental) enqueues the key and returns a lazy object wrapper. The lazy object's `get()` method will return the value when called. This API might be replaced with smarter lazy objects in the future.
 
 Subclass-API:
 
