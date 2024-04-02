@@ -160,7 +160,7 @@ article_1 = ArticleByIdFetcher.get_instance().get(1)
 
 ## Testing data-fetchers
 
-Batch logic is often complex and error-prone. We recommend writing tests for your fetchers.  provides a mock request object that you can use to test your fetchers. Without this context-manager, your fetchers won't be able to cache anything and might raise errors. Here's an example in pytest:
+Batch logic is often complex and error-prone. We recommend writing tests for your fetchers. This package provides a mock request object that you can use to test your fetchers. Without this context-manager, your fetchers won't be able to cache anything and might raise errors. Here's an example in pytest:
 
 ```python
 from data_fetcher.util import GlobalRequest
