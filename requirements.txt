@@ -1,5 +1,5 @@
 colored-traceback==0.3.0 # used for tests, but required my manage.py and therefore prod scripts
-Django==4.0.0
+Django==4.1.13
 django-extensions==3.1.1
 Faker==4.0.0
 ipython==8.10.0
