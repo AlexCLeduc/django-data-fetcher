@@ -6,7 +6,6 @@ from django.contrib.auth import get_user_model
 from data_fetcher import (
     DataFetcher,
     PrimaryKeyFetcherFactory,
-    cache_within_request,
     get_datafetcher_request_cache,
 )
 from data_fetcher.util import GlobalRequest, get_request
@@ -99,29 +98,6 @@ def test_composed_datafetcher(django_assert_max_num_queries):
 
         fetcher_cache = get_datafetcher_request_cache()
         assert fetcher_cache[UserByPKFetcher] is not None
-
-
-def test_cache_decorator(django_assert_max_num_queries):
-    spy = MagicMock()
-
-    def func_to_cache():
-        spy()
-        return 1
-
-    cached_func = cache_within_request(func_to_cache)
-
-    with GlobalRequest():
-        result = cached_func()
-        result2 = cached_func()
-
-        assert result == result2 == 1
-        spy.assert_called_once()
-
-    with GlobalRequest():
-        cached_func()
-        cached_func()
-
-        assert spy.call_count == 2
 
 
 def test_priming():

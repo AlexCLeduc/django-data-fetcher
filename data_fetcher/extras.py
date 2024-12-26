@@ -4,11 +4,20 @@ from .core import DataFetcher
 from .util import MissingRequestContextException, get_datafetcher_request_cache
 
 
+class CacheDecoratorException(Exception):
+    pass
+
+
 def cache_within_request(fn):
     """
     ensure a function's values are cached for the duration of a request
 
     """
+
+    if isinstance(fn, classmethod):
+        raise CacheDecoratorException(
+            "apply the classmethod decorator after (above) the cache_within_request decorator"
+        )
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
