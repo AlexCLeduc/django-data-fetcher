@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="django-data-fetcher",
-    version="2.2",
+    version="2.2.1",
     author="AlexCLeduc",
     # author_email="author@example.com",
     # description="A small example package",
